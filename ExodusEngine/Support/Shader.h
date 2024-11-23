@@ -18,18 +18,23 @@
 *	along with The CronoGames Game Engine.  If not, see <http://www.gnu.org/licenses/>.   *
 ******************************************************************************************/
 #pragma once
+#include "exopch.h"
+#include "Support/WinInclude.h"
 
-#include <string>
-#include <sstream>
-#include <string_view>
-#include <filesystem>
-#include <cstdlib>
-#include <fstream>
+namespace Exodus
+{
+	class Shader
+	{
+	public:
+		Shader(std::string_view name);
+		~Shader();
 
-#include <vector>
-#include <queue>
+		inline const void* GetBuffer() const { return m_data; }
+		inline size_t GetSize() const {	return m_size; }
 
-#include <optional>
-#include <bitset>
+	private:		
+		void* m_data = nullptr;
+		size_t m_size = 0;
+	};
 
-#include "ExodusMath.h"
+}

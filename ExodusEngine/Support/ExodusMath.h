@@ -19,17 +19,11 @@
 ******************************************************************************************/
 #pragma once
 
-#include <string>
-#include <sstream>
-#include <string_view>
-#include <filesystem>
-#include <cstdlib>
-#include <fstream>
+#include <DirectXMath.h>
+#include <math.h>
 
-#include <vector>
-#include <queue>
+#define MEM_KIB(kib)		(kib * 1024)
+#define MEM_MIB(mib)		MEM_KIB(mib * 1024)
+#define MEM_GIB(gib)		MEM_MIB(gib * 1024)
 
-#include <optional>
-#include <bitset>
-
-#include "ExodusMath.h"
+#define PI					3.141592653589793238462643383279502884197

@@ -24,6 +24,11 @@
 
 namespace Exodus
 {
+	struct Vertex
+	{
+		float X;
+		float Y;
+	};
 	class DXContext
 	{
 	public:
@@ -32,6 +37,8 @@ namespace Exodus
 		void ToggleVSync();		
 		bool Resize( Window* wnd );
 		void BeginFrame();
+		void BindInputAssembler();
+		void Draw();
 		void EndFrame();
 
 		inline ComPointer<IDXGIFactory7>& GetFactory()
@@ -50,6 +57,7 @@ namespace Exodus
 		}
 
 	private:	
+		void InitMemoryBuffers();
 		void SignalAndWait();
 		ID3D12GraphicsCommandList10* InitCommandList();
 		void ExecuteCommandList();
@@ -64,6 +72,8 @@ namespace Exodus
 	private:
 		static constexpr int32_t m_bufferCount = 2;
 		int32_t m_currentBufferIndex = 0;
+
+		ComPointer<ID3D12Resource2> m_uploadBuffer, m_vertexBuffer;
 
 		ComPointer<IDXGIFactory7> m_factory;
 		ComPointer<ID3D12Device14> m_device;
@@ -88,6 +98,9 @@ namespace Exodus
 
 		// Can be toggled with the V key.
 		bool _VSync = true;
+
+		D3D12_VERTEX_BUFFER_VIEW m_vbv{};
+		Vertex m_verticies[3];
 
 		// Singleton
 	public:

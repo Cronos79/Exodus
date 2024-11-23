@@ -36,7 +36,7 @@ namespace Exodus
 
 	}
 
-	bool EngineApplication::Run()
+	int32_t EngineApplication::Run()
 	{
 		if (Init())
 		{
@@ -58,9 +58,12 @@ namespace Exodus
 				
 				DXContext::Get().BeginFrame();
 
-				// DRAW
 				HandleInput( dt );
 				Update( dt );
+				// DRAW
+				DXContext::Get().BindInputAssembler();
+				DXContext::Get().Draw();
+				
 
 				DXContext::Get().EndFrame();
 			}

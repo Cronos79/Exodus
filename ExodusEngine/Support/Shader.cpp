@@ -17,19 +17,43 @@
 *	You should have received a copy of the GNU General Public License					  *
 *	along with The CronoGames Game Engine.  If not, see <http://www.gnu.org/licenses/>.   *
 ******************************************************************************************/
-#pragma once
+#include "exopch.h"
+#include "Shader.h"
 
-#include <string>
-#include <sstream>
-#include <string_view>
-#include <filesystem>
-#include <cstdlib>
-#include <fstream>
+namespace Exodus
+{
+	Shader::Shader( std::string_view name )
+	{
+		static std::filesystem::path shaderDir;
+		if (shaderDir.empty())
+		{
+			wchar_t moduleFileName[MAX_PATH];
+			GetModuleFileName( nullptr, moduleFileName, MAX_PATH );
 
-#include <vector>
-#include <queue>
+			shaderDir = moduleFileName;
+			shaderDir.remove_filename();
+		}
 
-#include <optional>
-#include <bitset>
+		std::ifstream shaderIn( shaderDir / name, std::ios::binary );
+		if (shaderIn.is_open())
+		{
+			shaderIn.seekg( 0, std::ios::end );
+			m_size = shaderIn.tellg();
+			shaderIn.seekg( 0, std::ios::beg );
+			m_data = malloc( m_size );
+			if (m_data)
+			{
+				shaderIn.read( (char*)m_data, m_size );
+			}
+		}
+	}
 
-#include "ExodusMath.h"
+	Shader::~Shader()
+	{
+		if (m_data)
+		{
+			free( m_data );
+		}
+	}
+
+}

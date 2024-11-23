@@ -31,7 +31,7 @@ namespace Exodus
 	public:
 		EngineApplication( int width, int height, std::string title);
 		~EngineApplication();
-		bool Run();
+		int32_t Run();
 		virtual void HandleInput(float deltaTime) = 0;
 		virtual void Update(float DeltaTime) = 0;
 	private:

@@ -20,6 +20,7 @@
     <ClCompile Include="Project\ProjectMng.cpp" />
     <ClCompile Include="Project\Project.cpp" />
     <ClCompile Include="Project\Scene\Scene.cpp" />
+    <ClCompile Include="Support\Shader.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Support\WinInclude.h" />
@@ -44,5 +45,12 @@
     <ClInclude Include="Project\ProjectMng.h" />
     <ClInclude Include="Project\Project.h" />
     <ClInclude Include="Project\Scene\Scene.h" />
+    <ClInclude Include="Support\ExodusMath.h" />
+    <ClInclude Include="Support\Shader.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <FxCompile Include="Shaders\VertexShader.hlsl" />
+    <FxCompile Include="Shaders\PixelShader.hlsl" />
+    <FxCompile Include="Shaders\RootSignature.hlsl" />
   </ItemGroup>
 </Project>
