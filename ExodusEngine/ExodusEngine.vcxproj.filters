@@ -1,0 +1,42 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="Windows\WinEntry.cpp" />
+    <ClCompile Include="Debug\DXDebugLayer.cpp" />
+    <ClCompile Include="Application\EngineApplication.cpp" />
+    <ClCompile Include="Support\ExodusException.cpp" />
+    <ClCompile Include="Windows\Window.cpp" />
+    <ClCompile Include="Windows\Mouse.cpp" />
+    <ClCompile Include="Windows\Keyboard.cpp" />
+    <ClCompile Include="imgui\imgui.cpp" />
+    <ClCompile Include="imgui\imgui_demo.cpp" />
+    <ClCompile Include="imgui\imgui_draw.cpp" />
+    <ClCompile Include="imgui\imgui_impl_dx12.cpp" />
+    <ClCompile Include="imgui\imgui_impl_win32.cpp" />
+    <ClCompile Include="imgui\imgui_tables.cpp" />
+    <ClCompile Include="imgui\imgui_widgets.cpp" />
+    <ClCompile Include="Support\ExodusTimer.cpp" />
+    <ClCompile Include="D3D\DXContext.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Support\WinInclude.h" />
+    <ClInclude Include="Support\ComPointer.h" />
+    <ClInclude Include="Debug\DXDebugLayer.h" />
+    <ClInclude Include="Application\EngineApplication.h" />
+    <ClInclude Include="Support\ExodusException.h" />
+    <ClInclude Include="Support\exopch.h" />
+    <ClInclude Include="Windows\Window.h" />
+    <ClInclude Include="Windows\Mouse.h" />
+    <ClInclude Include="Windows\Keyboard.h" />
+    <ClInclude Include="imgui\imconfig.h" />
+    <ClInclude Include="imgui\imgui.h" />
+    <ClInclude Include="imgui\imgui_impl_dx12.h" />
+    <ClInclude Include="imgui\imgui_impl_win32.h" />
+    <ClInclude Include="imgui\imgui_internal.h" />
+    <ClInclude Include="imgui\imstb_rectpack.h" />
+    <ClInclude Include="imgui\imstb_textedit.h" />
+    <ClInclude Include="imgui\imstb_truetype.h" />
+    <ClInclude Include="Support\ExodusTimer.h" />
+    <ClInclude Include="D3D\DXContext.h" />
+  </ItemGroup>
+</Project>
