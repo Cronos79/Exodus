@@ -17,6 +17,9 @@
     <ClCompile Include="imgui\imgui_widgets.cpp" />
     <ClCompile Include="Support\ExodusTimer.cpp" />
     <ClCompile Include="D3D\DXContext.cpp" />
+    <ClCompile Include="Project\ProjectMng.cpp" />
+    <ClCompile Include="Project\Project.cpp" />
+    <ClCompile Include="Project\Scene\Scene.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Support\WinInclude.h" />
@@ -38,5 +41,8 @@
     <ClInclude Include="imgui\imstb_truetype.h" />
     <ClInclude Include="Support\ExodusTimer.h" />
     <ClInclude Include="D3D\DXContext.h" />
+    <ClInclude Include="Project\ProjectMng.h" />
+    <ClInclude Include="Project\Project.h" />
+    <ClInclude Include="Project\Scene\Scene.h" />
   </ItemGroup>
 </Project>

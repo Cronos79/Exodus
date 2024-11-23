@@ -97,6 +97,9 @@
     <ClCompile Include="Debug\DXDebugLayer.cpp" />
     <ClCompile Include="Application\EngineApplication.cpp" />
     <ClCompile Include="D3D\DXContext.cpp" />
+    <ClCompile Include="Project\Project.cpp" />
+    <ClCompile Include="Project\ProjectMng.cpp" />
+    <ClCompile Include="Project\Scene\Scene.cpp" />
     <ClCompile Include="Support\ExodusTimer.cpp" />
     <ClCompile Include="imgui\imgui.cpp" />
     <ClCompile Include="imgui\imgui_demo.cpp" />
@@ -115,6 +118,9 @@
     <ClInclude Include="Debug\DXDebugLayer.h" />
     <ClInclude Include="Application\EngineApplication.h" />
     <ClInclude Include="D3D\DXContext.h" />
+    <ClInclude Include="Project\Project.h" />
+    <ClInclude Include="Project\ProjectMng.h" />
+    <ClInclude Include="Project\Scene\Scene.h" />
     <ClInclude Include="Support\ExodusTimer.h" />
     <ClInclude Include="imgui\imconfig.h" />
     <ClInclude Include="imgui\imgui.h" />
