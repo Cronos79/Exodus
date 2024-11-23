@@ -104,6 +104,14 @@ namespace Exodus
 	{
 		Flush();
 		ReleaseBuffers();
+		if (m_rtvDescHeap)
+		{
+			m_rtvDescHeap.Release();
+		}
+		if (m_srvDescHeap)
+		{
+			m_srvDescHeap.Release();
+		}
 		if (m_factory)
 		{
 			m_factory.Release();
@@ -176,7 +184,7 @@ namespace Exodus
 	{
 		UINT syncInterval = _VSync ? 1 : 0;
 		UINT presentFlags = _TearingSupported && !_VSync ? DXGI_PRESENT_ALLOW_TEARING : 0;
-		ThrowIfFailed( m_swapChain->Present( syncInterval, presentFlags ) );
+		ThrowIfFailed( m_swapChain->Present( syncInterval, presentFlags ) );		
 	}
 
 	void DXContext::ToggleVSync()
@@ -206,6 +214,60 @@ namespace Exodus
 		return false;
 	}
 
+	void DXContext::BeginFrame()
+	{
+		InitCommandList();
+
+		m_currentBufferIndex = m_swapChain->GetCurrentBackBufferIndex();
+
+		D3D12_RESOURCE_BARRIER barr;
+		barr.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+		barr.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+		barr.Transition.pResource = m_buffers[m_currentBufferIndex];
+		barr.Transition.Subresource = 0;
+		barr.Transition.StateBefore = D3D12_RESOURCE_STATE_PRESENT;
+		barr.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
+		m_cmdList->ResourceBarrier( 1, &barr );
+
+		// Start the Dear ImGui frame
+		ImGui_ImplDX12_NewFrame();
+		ImGui_ImplWin32_NewFrame();
+		ImGui::NewFrame();
+	}
+
+	void DXContext::EndFrame()
+	{
+		FLOAT clearColor[] = { 0.4f, 0.6f, 0.9f, 1.0f };
+		ImGuiIO& io = ImGui::GetIO(); (void)io;
+		// Rendering
+		ImGui::Render();
+
+		m_cmdList->ClearRenderTargetView( m_rtvHandles[m_currentBufferIndex], clearColor, 0, nullptr);
+		m_cmdList->OMSetRenderTargets( 1, &m_rtvHandles[m_currentBufferIndex], FALSE, nullptr );
+		m_cmdList->SetDescriptorHeaps( 1, &m_srvDescHeap );
+		ImGui_ImplDX12_RenderDrawData( ImGui::GetDrawData(), m_cmdList );
+
+		D3D12_RESOURCE_BARRIER barr;
+		barr.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+		barr.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+		barr.Transition.pResource = m_buffers[m_currentBufferIndex];
+		barr.Transition.Subresource = 0;
+		barr.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
+		barr.Transition.StateAfter = D3D12_RESOURCE_STATE_PRESENT;
+		m_cmdList->ResourceBarrier( 1, &barr );	
+
+		ExecuteCommandList();
+
+		// Update and Render additional Platform Windows
+		if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+		{
+			ImGui::UpdatePlatformWindows();
+			ImGui::RenderPlatformWindowsDefault();
+		}
+
+		Present();
+	}
+
 	bool DXContext::GetBuffers()
 	{
 		for (int32_t i = 0; i < m_bufferCount; ++i)
@@ -214,7 +276,12 @@ namespace Exodus
 			{
 				return false;
 			}
-			
+			D3D12_RENDER_TARGET_VIEW_DESC rtvDesc{};
+			rtvDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+			rtvDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
+			rtvDesc.Texture2D.MipSlice = 0;
+			rtvDesc.Texture2D.PlaneSlice = 0;
+			m_device->CreateRenderTargetView( m_buffers[i], &rtvDesc, m_rtvHandles[i] );
 		}
 		return true;
 	}
@@ -256,10 +323,48 @@ namespace Exodus
 			return false;
 		}
 
+		//Create RTV heap
+		D3D12_DESCRIPTOR_HEAP_DESC rtvDescHeapDesc{};
+		rtvDescHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
+		rtvDescHeapDesc.NumDescriptors = m_bufferCount;
+		rtvDescHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
+		rtvDescHeapDesc.NodeMask = 0;
+		if (FAILED( m_device->CreateDescriptorHeap( &rtvDescHeapDesc, IID_PPV_ARGS( &m_rtvDescHeap ) ) ))
+		{
+			return false;
+		}
+
+		{
+			// Create handles to view
+			auto firstHandle = m_rtvDescHeap->GetCPUDescriptorHandleForHeapStart();
+			auto handleIncrement = m_device->GetDescriptorHandleIncrementSize( D3D12_DESCRIPTOR_HEAP_TYPE_RTV );
+			for (int32_t i = 0; i < m_bufferCount; ++i)
+			{
+				m_rtvHandles[i] = firstHandle;
+				m_rtvHandles[i].ptr += handleIncrement * i;
+			}
+		}
+
+		//Create SRV heap
+		D3D12_DESCRIPTOR_HEAP_DESC srvDescHeapDesc{};
+		srvDescHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+		srvDescHeapDesc.NumDescriptors = 1;
+		srvDescHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
+		srvDescHeapDesc.NodeMask = 0;
+		if (FAILED( m_device->CreateDescriptorHeap( &srvDescHeapDesc, IID_PPV_ARGS( &m_srvDescHeap ) ) ))
+		{
+			return false;
+		}
+
 		if (!GetBuffers())
 		{
 			return false;
 		}
+
+		ImGui_ImplDX12_Init( m_device, m_bufferCount,
+			DXGI_FORMAT_R8G8B8A8_UNORM, m_srvDescHeap,
+			m_srvDescHeap->GetCPUDescriptorHandleForHeapStart(),
+			m_srvDescHeap->GetGPUDescriptorHandleForHeapStart() );
 
 		return true;
 	}

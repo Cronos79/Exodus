@@ -18,6 +18,12 @@
 *	along with The CronoGames Game Engine.  If not, see <http://www.gnu.org/licenses/>.   *
 ******************************************************************************************/
 #include "EditorApplication.h"
+// imgui
+#include "imgui/imgui.h"
+#include "imgui/imgui_impl_win32.h"
+#include "imgui/imgui_impl_dx12.h"
+#include "imgui/imgui_internal.h"
+#include "D3D/DXContext.h"
 
 namespace Exodus
 {
@@ -39,11 +45,19 @@ namespace Exodus
 		{
 			m_wnd->SetFullscreen();
 		}
+		if (m_wnd->kbd.KeyIsPressed( 'V'))
+		{
+			DXContext::Get().ToggleVSync();
+		}
 	}
 
 	void EditorApplication::Update( float DeltaTime )
 	{
-		
+		//ImGui::ShowDemoWindow();
+		ImGuiIO& io = ImGui::GetIO(); (void)io;
+		ImGui::Begin( "FPS" );
+		ImGui::Text( "Application average %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate );
+		ImGui::End();
 	}
 
 }

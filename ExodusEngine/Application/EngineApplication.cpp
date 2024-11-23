@@ -55,11 +55,14 @@ namespace Exodus
 				}
 				// execute the game logic
 				const auto dt = m_timer->Mark() * m_speedFactor;
-				DXContext::Get().InitCommandList();
+				
+				DXContext::Get().BeginFrame();
+
+				// DRAW
 				HandleInput( dt );
 				Update( dt );
-				DXContext::Get().ExecuteCommandList();
-				DXContext::Get().Present();
+
+				DXContext::Get().EndFrame();
 			}
 		}
 		return -1;

@@ -28,15 +28,11 @@ namespace Exodus
 	{
 	public:
 		bool Init( Window* wnd );
-		void Shutdown();
-
-		void SignalAndWait();
-		ID3D12GraphicsCommandList10* InitCommandList();
-		void ExecuteCommandList();
-		void Present();
-		void ToggleVSync();
-		void Flush();
+		void Shutdown();	
+		void ToggleVSync();		
 		bool Resize( Window* wnd );
+		void BeginFrame();
+		void EndFrame();
 
 		inline ComPointer<IDXGIFactory7>& GetFactory()
 		{
@@ -54,6 +50,11 @@ namespace Exodus
 		}
 
 	private:	
+		void SignalAndWait();
+		ID3D12GraphicsCommandList10* InitCommandList();
+		void ExecuteCommandList();
+		void Present();
+		void Flush();
 		bool GetBuffers();
 		void ReleaseBuffers();
 		bool CreateSwapChain( Window* wnd );
@@ -62,6 +63,7 @@ namespace Exodus
 		ComPointer<ID3D12Device14> CreateDevice( ComPointer<IDXGIAdapter4> adapter );
 	private:
 		static constexpr int32_t m_bufferCount = 2;
+		int32_t m_currentBufferIndex = 0;
 
 		ComPointer<IDXGIFactory7> m_factory;
 		ComPointer<ID3D12Device14> m_device;
@@ -77,7 +79,9 @@ namespace Exodus
 		HANDLE m_fenceEvent = nullptr;
 		UINT64 m_fenceValue = 0;
 
-		
+		ComPointer<ID3D12DescriptorHeap> m_rtvDescHeap;
+		D3D12_CPU_DESCRIPTOR_HANDLE m_rtvHandles[m_bufferCount];
+		ComPointer<ID3D12DescriptorHeap> m_srvDescHeap;		
 
 		bool _TearingSupported;
 		bool _rayTracingSupport;
