@@ -99,12 +99,12 @@ namespace Exodus
 			}
 		}
 
-		InitMemoryBuffers();
+		Init2();
 
 		return true;
 	}
 
-	void DXContext::InitMemoryBuffers()
+	void DXContext::Init2()
 	{
 		D3D12_HEAP_PROPERTIES hpUpload{};
 		hpUpload.Type = D3D12_HEAP_TYPE_UPLOAD;
@@ -120,21 +120,20 @@ namespace Exodus
 		hpDefault.CreationNodeMask = 0;
 		hpDefault.VisibleNodeMask = 0;
 
-		// == Vertex data ==		
-		m_verticies[0] = { -1.f, -1.f };
-		m_verticies[1] = { 0.f,  1.f };
-		m_verticies[2] = { 1.f, -1.f };
-		/*	{
-				{ -1.f, -1.f },
-				{ 0.f,  1.f },
-				{ 1.f, -1.f },
-			};	*/
-
+		// === Vertex Data ===	
+		Vertex verticies[] =
+		{
+			// T1
+			{ -1.f, -1.f },
+			{  0.f,  1.f },
+			{  1.f, -1.f },
+		};
 		D3D12_INPUT_ELEMENT_DESC vertexLayout[] =
 		{
-			{"Position", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D12_APPEND_ALIGNED_ELEMENT, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0}
+			{ "Position", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
 		};
 
+		// === Upload & Vertex Buffer ===
 		D3D12_RESOURCE_DESC rd{};
 		rd.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
 		rd.Alignment = D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT;
@@ -148,54 +147,110 @@ namespace Exodus
 		rd.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
 		rd.Flags = D3D12_RESOURCE_FLAG_NONE;
 
-		m_device->CreateCommittedResource( &hpUpload, D3D12_HEAP_FLAG_NONE, &rd, D3D12_RESOURCE_STATE_COMMON, nullptr, IID_PPV_ARGS( &m_uploadBuffer ) );
-		m_device->CreateCommittedResource( &hpDefault, D3D12_HEAP_FLAG_NONE, &rd, D3D12_RESOURCE_STATE_COMMON, nullptr, IID_PPV_ARGS( &m_vertexBuffer ) );
+		
+		DXContext::Get().GetDevice()->CreateCommittedResource( &hpUpload, D3D12_HEAP_FLAG_NONE, &rd, D3D12_RESOURCE_STATE_COMMON, nullptr, IID_PPV_ARGS( &m_uploadBuffer ) );
+		DXContext::Get().GetDevice()->CreateCommittedResource( &hpDefault, D3D12_HEAP_FLAG_NONE, &rd, D3D12_RESOURCE_STATE_COMMON, nullptr, IID_PPV_ARGS( &m_vertexBuffer ) );
 
-		// Copy void* to cpu resource
+		// Copy void* --> CPU Resource
 		void* uploadBufferAddress;
 		D3D12_RANGE uploadRange;
 		uploadRange.Begin = 0;
 		uploadRange.End = 1023;
 		m_uploadBuffer->Map( 0, &uploadRange, &uploadBufferAddress );
-		memcpy( uploadBufferAddress, m_verticies, sizeof( m_verticies ) );
+		memcpy( uploadBufferAddress, verticies, sizeof( verticies ) );
 		m_uploadBuffer->Unmap( 0, &uploadRange );
-		// Copy cpu resource to gpu
-		InitCommandList();
-		m_cmdList->CopyBufferRegion( m_vertexBuffer, 0, m_uploadBuffer, 0, 1023 );
-		ExecuteCommandList();
 
+		// Copy CPU Resource --> GPU Resource
+		auto* cmdList = DXContext::Get().InitCommandList();
+		cmdList->CopyBufferRegion( m_vertexBuffer, 0, m_uploadBuffer, 0, 1024 );
+		DXContext::Get().ExecuteCommandList();
+
+		// === Shaders ===
+		Shader rootSignatureShader( "RootSignature.cso" );
 		Shader vertexShader( "VertexShader.cso" );
 		Shader pixelShader( "PixelShader.cso" );
 
-		// == Pipeline state ==
+		// === Create root signature ===
+		
+		DXContext::Get().GetDevice()->CreateRootSignature( 0, rootSignatureShader.GetBuffer(), rootSignatureShader.GetSize(), IID_PPV_ARGS( &m_rootSignature ) );
+
+		// === Pipeline state ===
 		D3D12_GRAPHICS_PIPELINE_STATE_DESC gfxPsod{};
-		gfxPsod.pRootSignature;
-		gfxPsod.VS.pShaderBytecode = vertexShader.GetBuffer();
-		gfxPsod.VS.BytecodeLength = vertexShader.GetSize();
-		gfxPsod.PS.pShaderBytecode = pixelShader.GetBuffer();
-		gfxPsod.PS.BytecodeLength = pixelShader.GetSize();
-		gfxPsod.DS;
-		gfxPsod.HS;
-		gfxPsod.GS;
-		gfxPsod.StreamOutput;
-		gfxPsod.BlendState;
-		gfxPsod.SampleMask;
-		gfxPsod.RasterizerState;
-		gfxPsod.DepthStencilState;
+		gfxPsod.pRootSignature = m_rootSignature;
 		gfxPsod.InputLayout.NumElements = _countof( vertexLayout );
 		gfxPsod.InputLayout.pInputElementDescs = vertexLayout;
 		gfxPsod.IBStripCutValue = D3D12_INDEX_BUFFER_STRIP_CUT_VALUE_DISABLED;
-		gfxPsod.PrimitiveTopologyType;
-		gfxPsod.NumRenderTargets;
-		gfxPsod.RTVFormats[8];
-		gfxPsod.DSVFormat;
-		gfxPsod.SampleDesc;
-		gfxPsod.NodeMask;
-		gfxPsod.CachedPSO;
-		gfxPsod.Flags;
+		gfxPsod.VS.BytecodeLength = vertexShader.GetSize();
+		gfxPsod.VS.pShaderBytecode = vertexShader.GetBuffer();
+		gfxPsod.PS.BytecodeLength = pixelShader.GetSize();
+		gfxPsod.PS.pShaderBytecode = pixelShader.GetBuffer();
+		gfxPsod.DS.BytecodeLength = 0;
+		gfxPsod.DS.pShaderBytecode = nullptr;
+		gfxPsod.HS.BytecodeLength = 0;
+		gfxPsod.HS.pShaderBytecode = nullptr;
+		gfxPsod.GS.BytecodeLength = 0;
+		gfxPsod.GS.pShaderBytecode = nullptr;
+		gfxPsod.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+		gfxPsod.RasterizerState.FillMode = D3D12_FILL_MODE_SOLID;
+		gfxPsod.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;
+		gfxPsod.RasterizerState.FrontCounterClockwise = FALSE;
+		gfxPsod.RasterizerState.DepthBias = 0;
+		gfxPsod.RasterizerState.DepthBiasClamp = .0f;
+		gfxPsod.RasterizerState.SlopeScaledDepthBias = .0f;
+		gfxPsod.RasterizerState.DepthClipEnable = FALSE;
+		gfxPsod.RasterizerState.MultisampleEnable = FALSE;
+		gfxPsod.RasterizerState.AntialiasedLineEnable = FALSE;
+		gfxPsod.RasterizerState.ForcedSampleCount = 0;
+		gfxPsod.StreamOutput.NumEntries = 0;
+		gfxPsod.StreamOutput.NumStrides = 0;
+		gfxPsod.StreamOutput.pBufferStrides = nullptr;
+		gfxPsod.StreamOutput.pSODeclaration = nullptr;
+		gfxPsod.StreamOutput.RasterizedStream = 0;
+		gfxPsod.NumRenderTargets = 1;
+		gfxPsod.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
+		gfxPsod.DSVFormat = DXGI_FORMAT_UNKNOWN;
+		gfxPsod.BlendState.AlphaToCoverageEnable = FALSE;
+		gfxPsod.BlendState.IndependentBlendEnable = FALSE;
+		gfxPsod.BlendState.RenderTarget[0].BlendEnable = FALSE;
+		gfxPsod.BlendState.RenderTarget[0].LogicOpEnable = FALSE;
+		gfxPsod.BlendState.RenderTarget[0].SrcBlend = D3D12_BLEND_ZERO;
+		gfxPsod.BlendState.RenderTarget[0].DestBlend = D3D12_BLEND_ZERO;
+		gfxPsod.BlendState.RenderTarget[0].BlendOp = D3D12_BLEND_OP_ADD;
+		gfxPsod.BlendState.RenderTarget[0].SrcBlendAlpha = D3D12_BLEND_ZERO;
+		gfxPsod.BlendState.RenderTarget[0].DestBlendAlpha = D3D12_BLEND_ZERO;
+		gfxPsod.BlendState.RenderTarget[0].BlendOpAlpha = D3D12_BLEND_OP_ADD;
+		gfxPsod.BlendState.RenderTarget[0].LogicOp = D3D12_LOGIC_OP_NOOP;
+		gfxPsod.BlendState.RenderTarget[0].RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
+		gfxPsod.DepthStencilState.DepthEnable = FALSE;
+		gfxPsod.DepthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_ALWAYS;
+		gfxPsod.DepthStencilState.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO;
+		gfxPsod.DepthStencilState.StencilEnable = FALSE;
+		gfxPsod.DepthStencilState.StencilReadMask = 0;
+		gfxPsod.DepthStencilState.StencilWriteMask = 0;
+		gfxPsod.DepthStencilState.FrontFace.StencilFunc = D3D12_COMPARISON_FUNC_ALWAYS;
+		gfxPsod.DepthStencilState.FrontFace.StencilDepthFailOp = D3D12_STENCIL_OP_KEEP;
+		gfxPsod.DepthStencilState.FrontFace.StencilFailOp = D3D12_STENCIL_OP_KEEP;
+		gfxPsod.DepthStencilState.FrontFace.StencilPassOp = D3D12_STENCIL_OP_KEEP;
+		gfxPsod.DepthStencilState.BackFace.StencilFunc = D3D12_COMPARISON_FUNC_ALWAYS;
+		gfxPsod.DepthStencilState.BackFace.StencilDepthFailOp = D3D12_STENCIL_OP_KEEP;
+		gfxPsod.DepthStencilState.BackFace.StencilFailOp = D3D12_STENCIL_OP_KEEP;
+		gfxPsod.DepthStencilState.BackFace.StencilPassOp = D3D12_STENCIL_OP_KEEP;
+		gfxPsod.SampleMask = 0xFFFFFFFF;
+		gfxPsod.SampleDesc.Count = 1;
+		gfxPsod.SampleDesc.Quality = 0;
+		gfxPsod.NodeMask = 0;
+		gfxPsod.CachedPSO.CachedBlobSizeInBytes = 0;
+		gfxPsod.CachedPSO.pCachedBlob = nullptr;
+		gfxPsod.Flags = D3D12_PIPELINE_STATE_FLAG_NONE;
 
+		
+		DXContext::Get().GetDevice()->CreateGraphicsPipelineState( &gfxPsod, IID_PPV_ARGS( &m_pso ) );
+
+		m_vertCount = _countof( verticies );
+		// === Vertex buffer view ===
+		//D3D12_VERTEX_BUFFER_VIEW vbv{};
 		m_vbv.BufferLocation = m_vertexBuffer->GetGPUVirtualAddress();
-		m_vbv.SizeInBytes = sizeof( Vertex ) * _countof( m_verticies );
+		m_vbv.SizeInBytes = sizeof( Vertex ) * _countof( verticies );
 		m_vbv.StrideInBytes = sizeof( Vertex );
 	}
 
@@ -340,6 +395,16 @@ namespace Exodus
 		ImGui_ImplDX12_NewFrame();
 		ImGui_ImplWin32_NewFrame();
 		ImGui::NewFrame();
+
+		FLOAT clearColor[] = { 1.0f, 0.6f, 0.2f, 1.0f };
+		m_cmdList->ClearRenderTargetView( m_rtvHandles[m_currentBufferIndex], clearColor, 0, nullptr );
+		m_cmdList->OMSetRenderTargets( 1, &m_rtvHandles[m_currentBufferIndex], FALSE, nullptr );
+	}
+
+	void DXContext::PSO()
+	{
+		m_cmdList->SetPipelineState( m_pso );
+		m_cmdList->SetGraphicsRootSignature( m_rootSignature );
 	}
 
 	void DXContext::BindInputAssembler()
@@ -348,20 +413,34 @@ namespace Exodus
 		m_cmdList->IASetPrimitiveTopology( D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST );
 	}
 
-	void DXContext::Draw()
+	void DXContext::RS(Window* wnd)
 	{
-		//m_cmdList->DrawInstanced( _countof( m_verticies ), 1, 0, 0 );
+		// == RS ==
+		D3D12_VIEWPORT vp;
+		vp.TopLeftX = vp.TopLeftY = 0;
+		vp.Width = wnd->GetWidth();
+		vp.Height = wnd->GetHeight();
+		vp.MinDepth = 1.f;
+		vp.MaxDepth = 0.f;
+		m_cmdList->RSSetViewports( 1, &vp );
+		RECT scRect;
+		scRect.left = scRect.top = 0;
+		scRect.right = wnd->GetWidth();
+		scRect.bottom = wnd->GetHeight();
+		m_cmdList->RSSetScissorRects( 1, &scRect );
+	}
+
+	void DXContext::Draw()
+	{		
+		m_cmdList->DrawInstanced( m_vertCount, 1, 0, 0 );
 	}
 
 	void DXContext::EndFrame()
 	{
-		FLOAT clearColor[] = { 0.4f, 0.6f, 0.9f, 1.0f };
 		ImGuiIO& io = ImGui::GetIO(); (void)io;
 		// Rendering
 		ImGui::Render();
 
-		m_cmdList->ClearRenderTargetView( m_rtvHandles[m_currentBufferIndex], clearColor, 0, nullptr);
-		m_cmdList->OMSetRenderTargets( 1, &m_rtvHandles[m_currentBufferIndex], FALSE, nullptr );
 		m_cmdList->SetDescriptorHeaps( 1, &m_srvDescHeap );
 		ImGui_ImplDX12_RenderDrawData( ImGui::GetDrawData(), m_cmdList );
 

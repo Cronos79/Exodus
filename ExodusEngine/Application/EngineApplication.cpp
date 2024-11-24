@@ -61,9 +61,10 @@ namespace Exodus
 				HandleInput( dt );
 				Update( dt );
 				// DRAW
+				DXContext::Get().PSO();
 				DXContext::Get().BindInputAssembler();
-				DXContext::Get().Draw();
-				
+				DXContext::Get().RS( m_wnd );
+				DXContext::Get().Draw();				
 
 				DXContext::Get().EndFrame();
 			}

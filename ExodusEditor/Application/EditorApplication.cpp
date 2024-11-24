@@ -53,7 +53,7 @@ namespace Exodus
 
 	void EditorApplication::Update( float DeltaTime )
 	{
-		//ImGui::ShowDemoWindow();
+		ImGui::ShowDemoWindow();
 		ImGuiIO& io = ImGui::GetIO(); (void)io;
 		ImGui::Begin( "FPS" );
 		ImGui::Text( "Application average %.3f ms/frame (%.1f FPS)", 1000.0f / io.Framerate, io.Framerate );
